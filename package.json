@@ -1,0 +1,14 @@
+{
+  "name": "jabbastic",
+  "description": "Jabbastic (made up from jabber and bombastic) is a tool which checks a given website every X minutes if condition Y is satisfied. If so, it notifies it's subscribers via jabber.",
+  "version": "0.1.1",
+  "dependencies": {
+    "jsdom": "0.2.x",
+    "node-xmpp": "0.3.x"
+  },
+  "author": {
+    "name": "ZauberNerd",
+    "email": "bjoernjohannes@gmail.com"
+  },
+  "license": "MIT"
+}
