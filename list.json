@@ -1,0 +1,114 @@
+{
+    "nexus 10 16gb": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_10_16gb",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "soldout",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    },
+    "nexus 10 32gb": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_10_32gb",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "soldout",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    },
+    "nexus 7 16gb": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_7_16gb",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "soldout",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    },
+    "nexus 7 32gb": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_7_32gb",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "soldout",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    },
+    "nexus 7 32gb hspa": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_7_32gb_hspa",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "soldout",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    },
+    "nexus 4 8gb": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_4_8gb",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "soldout",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    },
+    "nexus 4 16gb": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_4_16gb",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "soldout",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    }
+}
