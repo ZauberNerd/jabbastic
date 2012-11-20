@@ -7,6 +7,7 @@ Jabbastic (made up from jabber and bombastic) is a tool which checks a given web
 #Configuration
 You need to put a config.json file inside the main directory with the following content:
 
+```JSON
 {
     "jabber": {
         "jid": "xyz@gmail.com",
@@ -15,3 +16,4 @@ You need to put a config.json file inside the main directory with the following 
         "port": 5222
     }
 }
+```
