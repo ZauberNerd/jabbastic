@@ -35,7 +35,7 @@ var path          = require("path"),
             });
 
             if (items[0] === "all" || items[0] === "") {
-                msg.respond("TODO: status all");
+                msg.respond("TODO: check status for all");
             }
         },
         subscribe: function (msg) {
@@ -138,6 +138,7 @@ function formatMessage(data) {
             }
         }
     }
+    str += "\n" + list[data[0]].url;
     return str;
 }
 
@@ -148,7 +149,7 @@ function handleSubscriptions(subscription, item, data) {
     var receiver = subscription.subscribers;
     if (subscription.lastMessage !== data) {
         receiver.forEach(function (receiver) {
-            jabber.send(receiver, data);
+            // jabber.send(receiver, formatMessage(data));
         });
     }
     subscription.lastMessage = data;
