@@ -8,9 +8,9 @@ var jsdom         = require("jsdom"),
     helptext      = "Type 'list' (without the quotation marks) to see a list of devices.\n\n" +
         "Type 'status <device>[, <device>, <device>,...]' (where device is one or " +
         "more of the device names returned by the 'devices' call) to see it's status.\n\n" +
-        "Type 'subscribe <device>[, <device>, <device>,...]' to subscribe for updates. " +
+        "Type 'subscribe <device>' to subscribe for updates. " +
         "As soon as the device(s) become available I'll send you a message..\n\n" +
-        "Type 'unsubscribe <device>[, <device>, <device>,...]' to not get updates for this device(s) anymore.",
+        "Type 'unsubscribe <device>' to not get updates for this device(s) anymore.",
     actions       = {
         list: function (msg) {
             msg.respond(Object.keys(list).join(", "));
@@ -29,6 +29,8 @@ var jsdom         = require("jsdom"),
 
                     match = true;
 
+                } else {
+                    msg.respond("wrong device name");
                 }
             });
 
@@ -37,14 +39,22 @@ var jsdom         = require("jsdom"),
             }
         },
         subscribe: function (msg) {
-            subscriptions.subscribe(msg.sender.user + "@" + msg.sender.domain, msg.cmdval);
-            subscriptions.save();
-            msg.respond("success");
+            if (typeof list[msg.cmdval] !== "undefined") {
+                subscriptions.subscribe(msg.sender.user + "@" + msg.sender.domain, msg.cmdval);
+                subscriptions.save();
+                msg.respond("success");
+            } else {
+                msg.respond("wrong device name.");
+            }
         },
         unsubscribe: function (msg) {
-            subscriptions.unsubscribe(msg.sender.user + "@" + msg.sender.domain, msg.cmdval);
-            subscriptions.save();
-            msg.respond("success");
+            if (typeof list[msg.cmdval] !== "undefined") {
+                subscriptions.unsubscribe(msg.sender.user + "@" + msg.sender.domain, msg.cmdval);
+                subscriptions.save();
+                msg.respond("success");
+            } else {
+                msg.respond("wrong device name");
+            }
         }
     };
 
