@@ -1,12 +1,10 @@
 var jsdom         = require("jsdom"),
-    fs            = require("fs"),
     xmpp          = require("./lib/xmpp"),
     Subscriptions = require("./lib/subscriptions"),
     list          = require("./list.json"),
     config        = require("./config.json"),
     jabber        = new xmpp.XMPP(config.jabber),
     subscriptions = new Subscriptions("./subscriptions.json"),
-    sizzle        = fs.readFileSync("./lib/sizzle.js").toString(),
     helptext      = "Type 'list' (without the quotation marks) to see a list of devices.\n\n" +
         "Type 'status <device>[, <device>, <device>,...]' (where device is one or " +
         "more of the device names returned by the 'devices' call) to see it's status.\n\n" +
@@ -39,15 +37,16 @@ var jsdom         = require("jsdom"),
             }
         },
         subscribe: function (msg) {
-            subscriptions.subscribe(msg.sender, msg.cmdval);
+            subscriptions.subscribe(msg.sender.user + "@" + msg.sender.domain, msg.cmdval);
+            subscriptions.save();
             msg.respond("success");
         },
         unsubscribe: function (msg) {
-            subscriptions.unsubscribe(msg.sender, msg.cmdval);
+            subscriptions.unsubscribe(msg.sender.user + "@" + msg.sender.domain, msg.cmdval);
+            subscriptions.save();
             msg.respond("success");
         }
     };
-
 
 
 jabber.on("message", function (msg) {
@@ -57,6 +56,8 @@ jabber.on("message", function (msg) {
     } else {
         msg.respond(helptext);
     }
+
+    console.log(msg);
 
 });
 
