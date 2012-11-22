@@ -1,12 +1,12 @@
-var path          = require("path"),
-    spawn         = require("child_process").spawn,
-    phantomjs     = require("phantomjs").path,
+var jsdom         = require("jsdom"),
+    fs            = require("fs"),
     xmpp          = require("./lib/xmpp"),
     Subscriptions = require("./lib/subscriptions"),
     list          = require("./list.json"),
     config        = require("./config.json"),
     jabber        = new xmpp.XMPP(config.jabber),
     subscriptions = new Subscriptions("./subscriptions.json"),
+    sizzle        = fs.readFileSync("./lib/sizzle.js").toString(),
     helptext      = "Type 'list' (without the quotation marks) to see a list of devices.\n\n" +
         "Type 'status <device>[, <device>, <device>,...]' (where device is one or " +
         "more of the device names returned by the 'devices' call) to see it's status.\n\n" +
@@ -69,60 +69,14 @@ function randomNumber(min, max) {
 }
 
 
-var tmpResults = {},
-    counter = 0;
-
-
-function spawnPhantom(url, label, evaluator, callback) {
-
-    // var uid = parseInt(Date.now() / 10 / 1000, 10);
-    var uid = counter++;
-
-    tmpResults[label + uid] = [];
-
-    var phantom = spawn(phantomjs, [path.join(__dirname, "check-site.js"), url, label, evaluator]);
-
-    phantom.stdout.setEncoding("utf-8");
-
-    (function (resultLabel) {
-        phantom.stdout.on("data", function (data) {
-            var str = data.toString(),
-                lines = str.split(/(\r?\n)/g),
-                length = lines.length,
-                i;
-
-            for (i = 0; i < length; i++) {
-                if (lines[i].length !== 0 && lines[i] !== "\n") {
-                    tmpResults[resultLabel].push(lines[i]);
-                }
-            }
-
-            if (tmpResults[resultLabel].length === 2) {
-                tmpResults[resultLabel][1] = JSON.parse(tmpResults[resultLabel][1]);
-                callback(tmpResults[resultLabel]);
-                delete tmpResults[resultLabel];
-            }
-
-        });
-    }(label + uid));
-
-}
-
-
-function createEvaluator(conditions) {
-    return "function () {" +
-        "var conditions = " + JSON.stringify(conditions) + "," +
-            "retVal = {};" +
-        "conditions.forEach(function (condition) {" +
-            "retVal[condition.label] = document.querySelectorAll(condition.query).length === condition.length;" +
-        "});" +
-        "return retVal;" +
-    "}";
-}
-
-
 function checkURL(itemName, itemObject, callback) {
-    spawnPhantom(itemObject.url, itemName, createEvaluator(itemObject.conditions), callback);
+    jsdom.env(itemObject.url, ["https://raw.github.com/jquery/sizzle/master/sizzle.js"], function (err, window) {
+        var data = {};
+        itemObject.conditions.forEach(function (condition) {
+            data[condition.label] = window.Sizzle(condition.query).length === condition.length;
+        });
+        callback([itemName, data]);
+    });
 }
 
 
@@ -145,14 +99,15 @@ function formatMessage(data) {
 
 function handleSubscriptions(subscription, item, data) {
     console.log(data);
-    data = JSON.stringify(data);
-    var receiver = subscription.subscribers;
-    if (subscription.lastMessage !== data) {
+    var receiver = subscription.subscribers,
+        message = JSON.stringify(data);
+    if (subscription.lastMessage !== message) {
         receiver.forEach(function (receiver) {
-            // jabber.send(receiver, formatMessage(data));
+            console.log("jabber.send", formatMessage(data));
+            jabber.send(receiver, formatMessage(data));
         });
     }
-    subscription.lastMessage = data;
+    subscription.lastMessage = message;
     subscriptions.save();
 }
 

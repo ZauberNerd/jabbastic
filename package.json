@@ -4,8 +4,7 @@
   "version": "0.1.1",
   "dependencies": {
     "jsdom": "0.2.x",
-    "node-xmpp": "0.3.x",
-    "phantomjs": "0.2.x"
+    "node-xmpp": "0.3.x"
   },
   "author": {
     "name": "ZauberNerd",
