@@ -1,6 +1,6 @@
 var fs = require("fs"),
-    subscriptions = JSON.parse(fs.readFileSync("../nexus-check/subscriptions.json")),
-    list = JSON.parse(fs.readFileSync("../nexus-check/list.json")),
+    subscriptions = JSON.parse(fs.readFileSync("subscriptions.json")),
+    list = JSON.parse(fs.readFileSync("list.json")),
     newsubscriptions = [],
     newlist = list;
 
