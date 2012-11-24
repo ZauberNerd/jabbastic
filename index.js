@@ -12,6 +12,7 @@ var fs            = require("fs"),
         "Type 'subscribe <device>[, <device>, <device>,...]' to subscribe for updates. " +
         "As soon as the device(s) become available I'll send you a message.\n\n" +
         "Type 'unsubscribe <device>[, <device>, <device>,...]' to not get updates for the device(s) anymore.\n\n" +
+        "Type 'subscriptions' to see a list of devices you are subscribed to.\n\n" +
         "This bot was written by +Björn Brauer (http://goo.gl/9OMAE). " +
         "More detailed information about the bot can be found here: http://goo.gl/eByrX",
 
@@ -79,7 +80,7 @@ var fs            = require("fs"),
         },
 
         subscriptions: function (msg) {
-            msg.respond("TODO: list all subscriptions.");
+            msg.respond(subscriptions.getSubscriptions(email(msg.sender)).join(", "));
         }
     };
 
