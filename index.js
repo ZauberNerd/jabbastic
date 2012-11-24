@@ -6,6 +6,9 @@ var fs            = require("fs"),
     config        = require("./config.json"),
     subscriptions = new Subscriptions("./subscriptions.json", init),
     jabber        = null,
+    cache         = {},
+    CACHE_TIME    = 3 * 1000 * 60,
+    RANDOM_TICK   = [2 * 1000 * 60, 6 * 1000 * 60],
     helptext      = "Type 'list' (without the quotation marks) to see a list of devices.\n\n" +
         "Type 'status <device>[, <device>, <device>,...]' (where device is one or " +
         "more of the device names returned by the 'devices' call) to see it's status.\n\n" +
@@ -15,6 +18,25 @@ var fs            = require("fs"),
         "Type 'subscriptions' to see a list of devices you are subscribed to.\n\n" +
         "This bot was written by +Björn Brauer (http://goo.gl/9OMAE). " +
         "More detailed information about the bot can be found here: http://goo.gl/eByrX",
+
+    logger = {
+        0: "log",
+        1: "info",
+        2: "warn",
+        3: "error",
+        log: function (level, message) {
+            var date = new Date(),
+                time = date.getMonth() + "/" + date.getDate() + "/" + date.getFullYear() + " - " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+            if (typeof level !== "number") {
+                message = level;
+                level = 1;
+            }
+            console[this[level]].apply(console, ["[" + time + "]"].concat(message));
+        },
+        error: function (message) {
+            this.log(3, message);
+        }
+    },
 
 
     actions = {
@@ -26,7 +48,11 @@ var fs            = require("fs"),
         status: function (msg) {
 
             if (msg.cmdval === "all" || msg.cmdval === "") {
-                msg.respond("TODO: return status for all devices at once.");
+                Object.keys(list).forEach(function (item) {
+                    checkStatus(item, list[item], function (data) {
+                        msg.respond(formatMessage(data));
+                    });
+                });
             } else {
                 eachItem(msg.cmdval, function (item) {
                     if (typeof list[item] !== "undefined") {
@@ -126,16 +152,27 @@ function formatMessage(data) {
 
 // TODO: refactor every function below this comment.
 
-function checkStatus(itemName, itemObject, callback) {
-    // TODO: Cache!
-    checkURL(itemName, itemObject, callback);
+function checkStatus(itemName, itemObject, callback, force) {
+    if (typeof cache[itemName] === "undefined") {
+        cache[itemName] = { data: [], time: 0 };
+    }
+    if (!force && Date.now() - cache[itemName].time < CACHE_TIME) {
+        callback([itemName, cache[itemName].data]);
+    } else {
+        checkURL(itemName, itemObject, function (data) {
+            cache[itemName].data = data[1];
+            cache[itemName].time = Date.now();
+            callback(data);
+        });
+    }
 }
 
 
 function checkURL(itemName, itemObject, callback) {
+    logger.log("checkURL: " + itemObject.url);
     jsdom.env(itemObject.url, ["https://raw.github.com/jquery/sizzle/master/sizzle.js"], function (err, window) {
         if (err !== null) {
-            console.error("jsdom error!", err);
+            logger.error("jsdom error!", err);
             // TODO: Error handling
             return;
         }
@@ -144,16 +181,17 @@ function checkURL(itemName, itemObject, callback) {
             data[condition.label] = window.Sizzle(condition.query).length === condition.length;
         });
         callback([itemName, data]);
+        window.close();
     });
 }
 
 
 function handleSubscriptions(receiver, itemObject, data) {
-    console.log(data);
+    logger.log(data);
     var message = JSON.stringify(data);
     if (itemObject.lastMessage && itemObject.lastMessage !== message) {
         receiver.forEach(function (receiver) {
-            console.log("jabber.send", formatMessage(data));
+            logger.log("jabber.send", formatMessage(data));
             jabber.send(receiver, formatMessage(data));
         });
     }
@@ -163,17 +201,17 @@ function handleSubscriptions(receiver, itemObject, data) {
 
 
 function tick() {
-    var nextTick = randomNumber(2, 7),
+    var nextTick = randomNumber.apply(null, RANDOM_TICK),
         item;
-    console.log("tick.");
+    logger.log("tick.");
     for (item in subscriptions.get()) {
         if (subscriptions.get().hasOwnProperty(item) &&
                 subscriptions.exists(item) && typeof list[item] !== "undefined") {
-            checkStatus(item, list[item], handleSubscriptions.bind(null, subscriptions.get(item), list[item]));
+            checkStatus(item, list[item], handleSubscriptions.bind(null, subscriptions.get(item), list[item]), true);
         }
     }
-    setTimeout(tick, nextTick * 1000 * 60);
-    console.log("next tick: ", nextTick, "minutes.");
+    setTimeout(tick, nextTick);
+    logger.log("next tick: " + (nextTick / 1000) + " seconds.");
 }
 
 
@@ -191,7 +229,7 @@ function init() {
             msg.respond(helptext);
         }
 
-        console.log(msg);
+        logger.log(msg);
 
     });
 
