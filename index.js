@@ -24,8 +24,10 @@ var fs            = require("fs"),
 
     logger = (function () {
 
-        var loglevel = ["debug", "info", "warn", "error"],
-            logger = { log: function () { log(1, arguments); } };
+        var loglevel = ["log", "info", "warn", "error"],
+            logger = {},
+            errLog = fs.createWriteStream("./logs/error.log", { "flags": "a" }),
+            debugLog = fs.createWriteStream("./logs/debug.log", { "flags": "a"});
 
         function pad(number) {
             return number <= 9 ? "0" + String(number) : String(number);
@@ -38,9 +40,14 @@ var fs            = require("fs"),
             return "[" + date + " - " + time + "]";
         }
 
+        function writeLog(level, args) {
+            (level === 3 ? errLog : debugLog).write(JSON.stringify(args) + "\n");
+        }
+
         function log(level, args) {
             args = [formatDate()].concat(Array.prototype.slice.call(args));
             console[loglevel[level]].apply(console, args);
+            writeLog(level, args);
         }
 
         loglevel.forEach(function (level, i) {
@@ -169,8 +176,11 @@ function checkStatus(itemName, itemObject, callback, force) {
         cache[itemName] = { data: [], time: 0 };
     }
     if (!force && Date.now() - cache[itemName].time < CACHE_TIME) {
+        logger.log("checkStatus", itemName, "responding with cached data", "age" +
+            cache[itemName].time, cache[itemName].data);
         callback([itemName, cache[itemName].data]);
     } else {
+        logger.log("checkStatus", itemName, "retrieving new data");
         checkURL(itemName, itemObject, function (data) {
             cache[itemName].data = data[1];
             cache[itemName].time = Date.now();
@@ -192,6 +202,7 @@ function checkURL(itemName, itemObject, callback) {
         itemObject.conditions.forEach(function (condition) {
             data[condition.label] = window.Sizzle(condition.query).length === condition.length;
         });
+        logger.log("checkURL", "got data for " + itemName, data);
         callback([itemName, data]);
         window.close();
     });
@@ -222,7 +233,7 @@ function sendMessage(data, jid) {
     setTimeout(function () {
 
         jabber.send(jid, text);
-        logger.log("Sending message (retry: " + message.retries + ", after " +
+        logger.log("Sending message (retry: " + message.retries + ", in " +
                 timeout + " seconds) to: " + jid, "text: " + text);
 
         // Delete the message object after timeout + 10 Minutes.
@@ -239,10 +250,11 @@ function sendMessage(data, jid) {
 
 
 function handleSubscriptions(receiver, itemObject, data) {
-    logger.log(data);
+    logger.log("handleSubscriptions", receiver, data);
     var message = JSON.stringify(data);
     if (itemObject.lastMessage && itemObject.lastMessage !== message) {
         receiver.forEach(sendMessage.bind(null, data));
+        logger.log("handleSubscriptions", "notifying all subscribers");
     }
     itemObject.lastMessage = message;
     fs.writeFile("./list.json", JSON.stringify(list, null, 4));
@@ -270,11 +282,10 @@ function init() {
     jabber = new xmpp.XMPP(config.jabber);
 
     jabber.on("connected", function (jid) {
-        logger.log(jid, "is online.");
+        logger.log(jid.user, "is online.");
     });
 
     jabber.on("message", function (msg) {
-
         logger.log("Message from", email(msg.sender), msg.text);
 
         if (typeof actions[msg.cmd] !== "undefined") {
@@ -282,7 +293,6 @@ function init() {
         } else {
             msg.respond(helptext);
         }
-
     });
 
     jabber.on("error", function (err) {
