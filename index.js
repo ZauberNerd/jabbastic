@@ -70,7 +70,7 @@ var fs            = require("fs"),
             if (msg.cmdval === "all" || msg.cmdval === "") {
                 Object.keys(list).forEach(function (item) {
                     checkStatus(item, list[item], function (data) {
-                        msg.respond(formatMessage(data[0], data[1]));
+                        msg.respond(formatMessage(list[data[0]].url, data[1]));
                     });
                 });
             } else {
@@ -78,7 +78,7 @@ var fs            = require("fs"),
                     if (typeof list[item] !== "undefined") {
 
                         checkStatus(item, list[item], function (data) {
-                            msg.respond(formatMessage(data[0], data[1]));
+                            msg.respond(formatMessage(list[data[0]].url, data[1]));
                         });
 
                     } else {
@@ -176,7 +176,7 @@ function checkStatus(itemName, itemObject, callback, force) {
         cache[itemName] = { data: [], time: 0 };
     }
     if (!force && Date.now() - cache[itemName].time < CACHE_TIME) {
-        logger.log("checkStatus", itemName, "responding with cached data", "age" +
+        logger.log("checkStatus", itemName, "responding with cached data", "age " +
             cache[itemName].time, cache[itemName].data);
         callback([itemName, cache[itemName].data]);
     } else {
