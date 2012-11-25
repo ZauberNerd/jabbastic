@@ -219,9 +219,14 @@ function tick() {
 function init() {
 
     jabber = new xmpp.XMPP(config.jabber);
-    tick();
+
+    jabber.on("connected", function (jid) {
+        logger.log(jid, "is online.");
+    });
 
     jabber.on("message", function (msg) {
+
+        logger.log("Message from", email(msg.sender), msg.text);
 
         if (typeof actions[msg.cmd] !== "undefined") {
             actions[msg.cmd](msg);
@@ -229,8 +234,12 @@ function init() {
             msg.respond(helptext);
         }
 
-        logger.log(msg);
-
     });
+
+    jabber.on("error", function (err) {
+        logger.error("[xmpp error]", err);
+    });
+
+    tick();
 
 }
