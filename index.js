@@ -250,7 +250,7 @@ function sendMessage(data, jid) {
 
 
 function handleSubscriptions(receiver, itemObject, data) {
-    logger.log("handleSubscriptions", receiver, data);
+    logger.log("handleSubscriptions", data);
     var message = JSON.stringify(data);
     if (itemObject.lastMessage && itemObject.lastMessage !== message) {
         logger.log("handleSubscriptions", "notifying all subscribers");
