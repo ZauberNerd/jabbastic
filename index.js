@@ -253,8 +253,8 @@ function handleSubscriptions(receiver, itemObject, data) {
     logger.log("handleSubscriptions", receiver, data);
     var message = JSON.stringify(data);
     if (itemObject.lastMessage && itemObject.lastMessage !== message) {
-        receiver.forEach(sendMessage.bind(null, data));
         logger.log("handleSubscriptions", "notifying all subscribers");
+        receiver.forEach(sendMessage.bind(null, data));
     }
     itemObject.lastMessage = message;
     fs.writeFile("./list.json", JSON.stringify(list, null, 4));
