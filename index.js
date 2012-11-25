@@ -6,37 +6,50 @@ var fs            = require("fs"),
     config        = require("./config.json"),
     subscriptions = new Subscriptions("./subscriptions.json", init),
     jabber        = null,
+    RANDOM_TICK   = [1 * 1000 * 60, 6 * 1000 * 60],
+    CACHE_TIME    = RANDOM_TICK[0],
     cache         = {},
-    CACHE_TIME    = 3 * 1000 * 60,
-    RANDOM_TICK   = [2 * 1000 * 60, 6 * 1000 * 60],
+    messages      = {},
     helptext      = "Type 'list' (without the quotation marks) to see a list of devices.\n\n" +
-        "Type 'status <device>[, <device>, <device>,...]' (where device is one or " +
-        "more of the device names returned by the 'devices' call) to see it's status.\n\n" +
-        "Type 'subscribe <device>[, <device>, <device>,...]' to subscribe for updates. " +
+        "Type 'status <device>[, <device>, ...]' (where device is one or " +
+        "more of the device names returned by the 'list' call) to see it's status.\n\n" +
+        "Type 'status' or 'status all' to see the status of all devices.\n\n" +
+        "Type 'subscribe <device>[, <device>, ...]' to subscribe for updates. " +
         "As soon as the device(s) become available I'll send you a message.\n\n" +
-        "Type 'unsubscribe <device>[, <device>, <device>,...]' to not get updates for the device(s) anymore.\n\n" +
+        "Type 'unsubscribe <device>[, <device>, ...]' to not get updates for the device(s) anymore.\n\n" +
         "Type 'subscriptions' to see a list of devices you are subscribed to.\n\n" +
         "This bot was written by +Björn Brauer (http://goo.gl/9OMAE). " +
         "More detailed information about the bot can be found here: http://goo.gl/eByrX",
 
-    logger = {
-        0: "log",
-        1: "info",
-        2: "warn",
-        3: "error",
-        log: function (level, message) {
-            var date = new Date(),
-                time = date.getMonth() + "/" + date.getDate() + "/" + date.getFullYear() + " - " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
-            if (typeof level !== "number") {
-                message = level;
-                level = 1;
-            }
-            console[this[level]].apply(console, ["[" + time + "]"].concat(message));
-        },
-        error: function (message) {
-            this.log(3, message);
+
+    logger = (function () {
+
+        var loglevel = ["debug", "info", "warn", "error"],
+            logger = { log: function () { log(1, arguments); } };
+
+        function pad(number) {
+            return number <= 9 ? "0" + String(number) : String(number);
         }
-    },
+
+        function formatDate() {
+            var now = new Date(),
+                date = [pad(now.getMonth()), pad(now.getDate()), now.getFullYear()].join("/"),
+                time = [pad(now.getHours()), pad(now.getMinutes()), pad(now.getSeconds())].join(":");
+            return "[" + date + " - " + time + "]";
+        }
+
+        function log(level, args) {
+            args = [formatDate()].concat(Array.prototype.slice.call(args));
+            console[loglevel[level]].apply(console, args);
+        }
+
+        loglevel.forEach(function (level, i) {
+            logger[level] = function () { log(i, arguments); };
+        });
+
+        return logger;
+
+    }()),
 
 
     actions = {
