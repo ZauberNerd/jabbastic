@@ -63,7 +63,7 @@ var fs            = require("fs"),
             if (msg.cmdval === "all" || msg.cmdval === "") {
                 Object.keys(list).forEach(function (item) {
                     checkStatus(item, list[item], function (data) {
-                        msg.respond(formatMessage(data));
+                        msg.respond(formatMessage(data[0], data[1]));
                     });
                 });
             } else {
@@ -71,7 +71,7 @@ var fs            = require("fs"),
                     if (typeof list[item] !== "undefined") {
 
                         checkStatus(item, list[item], function (data) {
-                            msg.respond(formatMessage(data));
+                            msg.respond(formatMessage(data[0], data[1]));
                         });
 
                     } else {
@@ -146,19 +146,18 @@ function randomNumber(min, max) {
 }
 
 
-function formatMessage(data) {
-    var str = data[0] + ": ",
+function formatMessage(name, data) {
+    var str = name + ": ",
         label;
-    for (label in data[1]) {
-        if (data[1].hasOwnProperty(label)) {
-            if (data[1][label]) {
+    for (label in data) {
+        if (data.hasOwnProperty(label)) {
+            if (data[label]) {
                 str += "is " + label + ". ";
             } else {
                 str += "is not " + label + ". ";
             }
         }
     }
-    str += "\n" + list[data[0]].url;
     return str;
 }
 
@@ -199,14 +198,51 @@ function checkURL(itemName, itemObject, callback) {
 }
 
 
+function sendMessage(data, jid) {
+
+    var text       = formatMessage(list[data[0]].url, data[1]),
+        key        = jid + text,
+        message    = messages[key] || { retries: 0, data: data, jid: jid },
+        slotTime   = 3,
+        maxTimes   = Math.pow(2, message.retries) - 1,
+        multiplier = message.retries <= 10 ? randomNumber(0, maxTimes) : maxTimes,
+        timeout    = multiplier * slotTime;
+
+    if (message.retries >= 16) {
+        logger.error("message has reached more than 16 retries. giving up.", message);
+        delete messages[key];
+        return;
+    }
+
+    if (message.deleteTimeout) {
+        clearTimeout(message.deleteTimeout);
+        message.deleteTimeout = null;
+    }
+
+    setTimeout(function () {
+
+        jabber.send(jid, text);
+        logger.log("Sending message (retry: " + message.retries + ", after " +
+                timeout + " seconds) to: " + jid, "text: " + text);
+
+        // Delete the message object after timeout + 10 Minutes.
+        messages[key].deleteTimeout = setTimeout(function () {
+            delete messages[key];
+        }, timeout * 1000 + (10 * 60 * 1000));
+
+    }, timeout * 1000);
+
+    message.retries += 1;
+    messages[key] = message;
+
+}
+
+
 function handleSubscriptions(receiver, itemObject, data) {
     logger.log(data);
     var message = JSON.stringify(data);
     if (itemObject.lastMessage && itemObject.lastMessage !== message) {
-        receiver.forEach(function (receiver) {
-            logger.log("jabber.send", formatMessage(data));
-            jabber.send(receiver, formatMessage(data));
-        });
+        receiver.forEach(sendMessage.bind(null, data));
     }
     itemObject.lastMessage = message;
     fs.writeFile("./list.json", JSON.stringify(list));
@@ -251,6 +287,18 @@ function init() {
 
     jabber.on("error", function (err) {
         logger.error("[xmpp error]", err);
+    });
+
+    jabber.on("stanzaerror", function (stanza) {
+        var message;
+        logger.error("[xmpp error]", stanza.toString());
+        if (stanza.name === "message" && stanza.getChild("error").attrs.code === "503") {
+            logger.log("Service unavailable. Probably exceeded quota. Try to reschedule the message later.");
+            message = messages[stanza.attrs.from + stanza.getChild("body").getText()];
+            if (message && message.data && message.jid) {
+                sendMessage(message.data, message.jid);
+            }
+        }
     });
 
     tick();
