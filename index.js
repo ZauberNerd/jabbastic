@@ -303,8 +303,8 @@ function init() {
         var message;
         logger.error("[xmpp error]", stanza.toString());
         if (stanza.name === "message" && stanza.getChild("error").attrs.code === "503") {
-            logger.log("Service unavailable. Probably exceeded quota. Try to reschedule the message later.");
             message = messages[stanza.attrs.from + stanza.getChild("body").getText()];
+            logger.log("Service unavailable. Probably exceeded quota. Try to reschedule the message later.", message);
             if (message && message.data && message.jid) {
                 sendMessage(message.data, message.jid);
             }
