@@ -245,7 +245,7 @@ function handleSubscriptions(receiver, itemObject, data) {
         receiver.forEach(sendMessage.bind(null, data));
     }
     itemObject.lastMessage = message;
-    fs.writeFile("./list.json", JSON.stringify(list));
+    fs.writeFile("./list.json", JSON.stringify(list, null, 4));
 }
 
 
