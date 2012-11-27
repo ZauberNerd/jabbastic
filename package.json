@@ -1,15 +1,28 @@
 {
-  "name": "jabbastic",
-  "description": "Jabbastic (made up from jabber and bombastic) is a tool which checks a given website every X minutes if condition Y is satisfied. If so, it notifies it's subscribers via jabber.",
-  "version": "0.1.2",
-  "dependencies": {
-    "jsdom": "0.2.x",
-    "node-xmpp": "0.3.x",
-    "byline": "2.0.x"
-  },
-  "author": {
-    "name": "ZauberNerd",
-    "email": "bjoernjohannes@gmail.com"
-  },
-  "license": "MIT"
+    "name": "jabbastic",
+    "description": "Jabbastic (made up from jabber and bombastic) is a tool which checks a given website every X minutes if condition Y is satisfied. If so, it notifies it's subscribers via jabber.",
+    "version": "0.1.3",
+    "author": {
+        "name": "ZauberNerd",
+        "email": "bjoernjohannes@gmail.com"
+    },
+    "scripts": {
+        "start": "node ./index.js"
+        },
+    "dependencies": {
+        "jsdom": "0.2.x",
+        "node-xmpp": "0.3.x",
+        "byline": "2.0.x"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ZauberNerd/jabbastic.git"
+    },
+    "keywords": [
+        "notify",
+        "jabber",
+        "xmpp",
+        "nexus"
+    ],
+    "license": "MIT"
 }
