@@ -18,16 +18,17 @@ var fs            = require("fs"),
         "As soon as the device(s) become available I'll send you a message.\n\n" +
         "Type 'unsubscribe <device>[, <device>, ...]' to not get updates for the device(s) anymore.\n\n" +
         "Type 'subscriptions' to see a list of devices you are subscribed to.\n\n" +
-        "This bot was written by +Björn Brauer (http://goo.gl/9OMAE). " +
-        "More detailed information about the bot can be found here: http://goo.gl/eByrX",
+        "This bot was written by +Björn Brauer.",
 
 
     logger = (function () {
 
         var loglevel = ["log", "info", "warn", "error"],
             logger = {},
-            errLog = fs.createWriteStream("./logs/error.log", { "flags": "a" }),
-            debugLog = fs.createWriteStream("./logs/debug.log", { "flags": "a"});
+            date = new Date(),
+            datestring = pad(date.getMonth()) + "." + pad(date.getDate()),
+            errLog = fs.createWriteStream("./logs/error-" + datestring + ".log", { "flags": "a" }),
+            debugLog = fs.createWriteStream("./logs/debug-" + datestring + ".log", { "flags": "a"});
 
         function pad(number) {
             return number <= 9 ? "0" + String(number) : String(number);
@@ -62,7 +63,7 @@ var fs            = require("fs"),
     actions = {
 
         list: function (msg) {
-            msg.respond(Object.keys(list).join(", "));
+            sendMessage(Object.keys(list).join(", "), msg.sender);
         },
 
         status: function (msg) {
@@ -70,7 +71,7 @@ var fs            = require("fs"),
             if (msg.cmdval === "all" || msg.cmdval === "") {
                 Object.keys(list).forEach(function (item) {
                     checkStatus(item, list[item], function (data) {
-                        msg.respond(formatMessage(list[data[0]].url, data[1]));
+                        sendMessage(formatMessage(data[0], data[1]), msg.sender);
                     });
                 });
             } else {
@@ -78,11 +79,11 @@ var fs            = require("fs"),
                     if (typeof list[item] !== "undefined") {
 
                         checkStatus(item, list[item], function (data) {
-                            msg.respond(formatMessage(list[data[0]].url, data[1]));
+                            sendMessage(formatMessage(data[0], data[1]), msg.sender);
                         });
 
                     } else {
-                        msg.respond("invalid device name: " + item);
+                        sendMessage("invalid device name: " + item, msg.sender);
                     }
                 });
             }
@@ -95,13 +96,13 @@ var fs            = require("fs"),
                 if (typeof list[item] !== "undefined") {
 
                     if (subscriptions.subscribe(email(msg.sender), item)) {
-                        msg.respond("successfully subscribed to: " + item);
+                        sendMessage("successfully subscribed to: " + item, msg.sender);
                     } else {
-                        msg.respond("you are already subscribed to: " + item);
+                        sendMessage("you are already subscribed to: " + item, msg.sender);
                     }
 
                 } else {
-                    msg.respond("invalid device name: " + item);
+                    sendMessage("invalid device name: " + item, msg.sender);
                 }
             });
 
@@ -113,20 +114,20 @@ var fs            = require("fs"),
                 if (typeof list[item] !== "undefined") {
 
                     if (subscriptions.unsubscribe(email(msg.sender), item)) {
-                        msg.respond("successfully unsubscribed from: " + item);
+                        sendMessage("successfully unsubscribed from: " + item, msg.sender);
                     } else {
-                        msg.respond("you weren't subscribed to: " + item);
+                        sendMessage("you weren't subscribed to: " + item, msg.sender);
                     }
 
                 } else {
-                    msg.respond("invalid device name: " + item);
+                    sendMessage("invalid device name: " + item, msg.sender);
                 }
             });
 
         },
 
         subscriptions: function (msg) {
-            msg.respond(subscriptions.getSubscriptions(email(msg.sender)).join(", "));
+            sendMessage(subscriptions.getSubscriptions(email(msg.sender)).join(", "), msg.sender);
         }
     };
 
@@ -209,14 +210,13 @@ function checkURL(itemName, itemObject, callback) {
 }
 
 
-function sendMessage(data, jid) {
+function sendMessage(text, jid) {
 
-    var text       = formatMessage(list[data[0]].url, data[1]),
-        key        = jid + text,
-        message    = messages[key] || { retries: 0, data: data, jid: jid },
+    var key        = jid + text,
+        message    = messages[key] || { retries: 0, jid: jid, text: text },
         slotTime   = 3,
         maxTimes   = Math.pow(2, message.retries) - 1,
-        multiplier = message.retries <= 10 ? randomNumber(0, maxTimes) : maxTimes,
+        multiplier = message.retries <= 10 ? randomNumber(1, maxTimes) : maxTimes,
         timeout    = multiplier * slotTime;
 
     if (message.retries >= 16) {
@@ -231,19 +231,21 @@ function sendMessage(data, jid) {
     }
 
     setTimeout(function () {
-
         jabber.send(jid, text);
-        logger.log("Sending message (retry: " + message.retries + ", in " +
+        logger.log("Sending message (retry: " + message.retries + ", after " +
                 timeout + " seconds) to: " + jid, "text: " + text);
 
         // Delete the message object after timeout + 10 Minutes.
-        messages[key].deleteTimeout = setTimeout(function () {
-            delete messages[key];
-        }, timeout * 1000 + (10 * 60 * 1000));
+        if (typeof messages[key] !== "undefined") {
+            messages[key].deleteTimeout = setTimeout(function () {
+                delete messages[key];
+            }, timeout * 1000 + (10 * 60 * 1000));
+        }
+
+        message.retries += 1;
 
     }, timeout * 1000);
 
-    message.retries += 1;
     messages[key] = message;
 
 }
@@ -254,7 +256,7 @@ function handleSubscriptions(receiver, itemObject, data) {
     var message = JSON.stringify(data);
     if (itemObject.lastMessage && itemObject.lastMessage !== message) {
         logger.log("handleSubscriptions", "notifying all subscribers");
-        receiver.forEach(sendMessage.bind(null, data));
+        receiver.forEach(sendMessage.bind(null, formatMessage(data[0], data[1]) + data[0]));
     }
     itemObject.lastMessage = message;
     fs.writeFile("./list.json", JSON.stringify(list, null, 4));
@@ -291,7 +293,7 @@ function init() {
         if (typeof actions[msg.cmd] !== "undefined") {
             actions[msg.cmd](msg);
         } else {
-            msg.respond(helptext);
+            sendMessage(helptext, msg.sender);
         }
     });
 
@@ -302,11 +304,12 @@ function init() {
     jabber.on("stanzaerror", function (stanza) {
         var message;
         logger.error("[xmpp error]", stanza.toString());
-        if (stanza.name === "message" && stanza.getChild("error").attrs.code === "503") {
+        if (stanza && stanza.name === "message" && stanza.getChild("error").attrs.code === "503" && stanza.getChild("body")) {
             message = messages[stanza.attrs.from + stanza.getChild("body").getText()];
-            logger.log("Service unavailable. Probably exceeded quota. Try to reschedule the message later.", message);
-            if (message && message.data && message.jid) {
-                sendMessage(message.data, message.jid);
+            logger.log("Service unavailable. Probably exceeded quota. Try to reschedule the message later.",
+                { retries: message.retries, jid: message.jid, text: message.text });
+            if (message && message.text && message.jid) {
+                sendMessage(message.text, message.jid);
             }
         }
     });
