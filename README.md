@@ -18,5 +18,13 @@ You need to put a config.json file inside the main directory with the following 
 }
 ```
 
+#Installation
+1. `git clone https://github.com/ZauberNerd/jabbastic.git`
+2. cd into the directory you cloned into.
+3. `npm install` to install all the dependencies.
+4. create the config.json file with the credentials for the jabber/xmpp login.
+5. create an empty subscriptions.json file.
+6. `node index.js` (or use a supervisor script, like node-supervisor or node-forever).
+
 Be aware that this is in it's early stages and might not work as expected.
 If you find any bugs, please either file an issue or fix them and send me a pull request ;)
