@@ -1,4 +1,20 @@
 {
+    "nexus 4 bumper": {
+        "url": "https://play.google.com/store/devices/details?id=nexus_4_bumper_black",
+        "author": "jidOfUserWhoAddedThisItem@gmail.com",
+        "conditions": [
+            {
+                "label": "available",
+                "query": "#buy-hardware-button",
+                "length": 1
+            },
+            {
+                "label": "sold out",
+                "query": ".hardware-sold-out",
+                "length": 1
+            }
+        ]
+    },
     "nexus 10 16gb": {
         "url": "https://play.google.com/store/devices/details?id=nexus_10_16gb",
         "author": "jidOfUserWhoAddedThisItem@gmail.com",
